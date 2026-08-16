@@ -14,6 +14,11 @@ dry_run: true
 # default -- "read-only unless explicitly enabled" is the whole point.
 allowed_write_tools: []
 
+rate_limit:
+  calls_per_min: 5
+  cost_per_session: 10
+  window_seconds: 60
+
 tools:
   search_docs:
     read_only: true

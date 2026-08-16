@@ -19,11 +19,14 @@ from pydantic import BaseModel, Field
 
 class ToolConfig(BaseModel):
     read_only: bool
-    # Not consumed yet (the rate/spend limiter lands in a later commit),
-    # but every tool declares a cost from day one so the config schema
-    # doesn't need to churn once the limiter starts reading it.
     cost_units: int = 1
     description: str = ""
+
+
+class RateLimitConfig(BaseModel):
+    calls_per_min: int = Field(default=5, gt=0)
+    cost_per_session: int = Field(default=10, gt=0)
+    window_seconds: int = Field(default=60, gt=0)
 
 
 class ServerConfig(BaseModel):
@@ -31,6 +34,7 @@ class ServerConfig(BaseModel):
     # until an operator explicitly turns this off.
     dry_run: bool = True
     allowed_write_tools: list[str] = Field(default_factory=list)
+    rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
     tools: dict[str, ToolConfig] = Field(default_factory=dict)
 
     @classmethod
@@ -43,12 +47,14 @@ class ServerConfig(BaseModel):
     def default(cls) -> "ServerConfig":
         """A safe-by-default config for callers that don't load a YAML file.
 
-        No write tools allowlisted -- matches the fail-safe posture the
-        spec calls for even before any config file is read.
+        No write tools allowlisted, dry-run on, conservative rate limits
+        -- matches the fail-safe posture the spec calls for even before
+        any config file is read.
         """
         return cls(
             dry_run=True,
             allowed_write_tools=[],
+            rate_limit=RateLimitConfig(),
             tools={
                 "search_docs": ToolConfig(read_only=True, cost_units=1, description="Search internal docs."),
                 "create_ticket": ToolConfig(read_only=False, cost_units=5, description="Create a ticket."),
