@@ -6,11 +6,13 @@ allowlisting, dry-run mode for write tools, per-session rate/spend caps,
 and structured audit logging.
 """
 
+from .config import ServerConfig
 from .errors import ErrorCode, MCPError
 from .identity import MockIdentityProvider, User
 from .server import MCPStarterServer, ToolCallResult
 
 __all__ = [
+    "ServerConfig",
     "ErrorCode",
     "MCPError",
     "MockIdentityProvider",

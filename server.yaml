@@ -1,0 +1,20 @@
+# MCP Starter Template server config.
+#
+# This file is the single source of truth for which tools exist, whether
+# each one is read-only or a write, and what it costs. A security
+# reviewer can read this file alone and know exactly what the server can
+# and cannot do without reading a line of Python.
+
+# Write tools are refused unless their name appears here. Empty by
+# default -- "read-only unless explicitly enabled" is the whole point.
+allowed_write_tools: []
+
+tools:
+  search_docs:
+    read_only: true
+    cost_units: 1
+    description: "Search internal docs visible to the calling user's team (read-only)."
+  create_ticket:
+    read_only: false
+    cost_units: 5
+    description: "Create a ticket in the downstream ticket system (write, allowlist-gated)."
