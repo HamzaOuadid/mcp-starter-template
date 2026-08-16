@@ -1,16 +1,18 @@
-"""Orchestrates auth passthrough and the tool registry's allowlist gate.
+"""Orchestrates auth passthrough, the allowlist gate, and dry-run mode.
 
 ``MCPStarterServer.call_tool`` is the single choke point every tool call
 passes through, transport-agnostic on purpose. Its signature is stable
-from the first commit; this one layers the write-tool allowlist on top of
-auth passthrough. Dry-run, rate limiting, and audit logging are layered
-in by subsequent commits.
+from the first commit; this one adds dry-run substitution on top of auth
+passthrough and the write-tool allowlist. Rate limiting and structured
+audit logging are layered in by a subsequent commit.
 
 Dispatch order so far:
   1. authenticate the caller (missing/invalid token -> ``UNAUTHENTICATED``)
   2. resolve the tool (unknown tool -> ``TOOL_NOT_FOUND``)
   3. write-allowlist check (disallowed write -> ``WRITE_NOT_ALLOWED``)
-  4. execute, scoped to the resolved ``User``
+  4. execute -- write tools get ``dry_run=self.config.dry_run`` so the
+     tool's own handler can substitute a synthetic response instead of
+     calling the real downstream API
 """
 
 from __future__ import annotations
@@ -116,5 +118,8 @@ class MCPStarterServer:
                 ),
             )
 
-        result = spec.handler(user=user, **arguments)
+        if spec.read_only:
+            result = spec.handler(user=user, **arguments)
+        else:
+            result = spec.handler(user=user, dry_run=self.config.dry_run, **arguments)
         return ToolCallResult(ok=True, result=result)

@@ -1,12 +1,12 @@
 """``create_ticket`` -- the write example tool.
 
-This is the tool the allowlist gate protects: unlike ``search_docs`` it
-has a real side effect on a downstream system, represented here by
-``TicketSystemClient`` standing in for a real ticketing API (Jira,
-Linear, ServiceNow, ...). Kept as a separate object (rather than a bare
-function) so later guardrails -- dry-run in particular -- can be tested
-by spying on ``.create`` directly to prove it either was or wasn't
-called, not just by inspecting the tool's return value.
+This is the tool both the allowlist gate and dry-run mode protect. Unlike
+``search_docs`` it has a real side effect on a downstream system,
+represented here by ``TicketSystemClient`` standing in for a real
+ticketing API (Jira, Linear, ServiceNow, ...). Kept as a separate object
+(rather than a bare function) so dry-run can be tested by spying on
+``.create`` directly to prove it either was or wasn't called, not just by
+inspecting the tool's return value.
 """
 
 from __future__ import annotations
@@ -14,15 +14,13 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 
+from ..dryrun import log_dry_run
 from ..identity import User
 
 
 @dataclass
 class TicketId:
     ticket_id: str
-    # Not meaningful yet (dry-run mode lands in a later commit), but part
-    # of the response shape from day one so callers don't need to change
-    # once it is.
     dry_run: bool = False
 
 
@@ -43,7 +41,25 @@ class TicketSystemClient:
         return ticket_id
 
 
-def create_ticket(user: User, title: str, body: str, client: TicketSystemClient) -> TicketId:
-    """Create a ticket via the downstream client, scoped to the calling user."""
-    ticket_id = client.create(title=title, body=body, requester=user.user_id)
-    return TicketId(ticket_id=ticket_id)
+def create_ticket(
+    user: User,
+    title: str,
+    body: str,
+    client: TicketSystemClient,
+    dry_run: bool = False,
+) -> TicketId:
+    """Create a ticket, or simulate doing so when ``dry_run`` is true.
+
+    When ``dry_run`` is true, this function logs the intended call (with
+    a ``[DRY RUN]`` marker) and returns a synthetic ``TicketId`` WITHOUT
+    calling ``client.create`` at all -- the real downstream client is
+    never touched. This is the actual guarantee under test in
+    ``test_dry_run.py``: a spy on ``client.create`` must never fire.
+    """
+    if dry_run:
+        log_dry_run("create_ticket", {"title": title, "body": body})
+        synthetic_id = f"DRYRUN-{uuid.uuid4().hex[:8]}"
+        return TicketId(ticket_id=synthetic_id, dry_run=True)
+
+    real_id = client.create(title=title, body=body, requester=user.user_id)
+    return TicketId(ticket_id=real_id, dry_run=False)

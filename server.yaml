@@ -5,6 +5,11 @@
 # reviewer can read this file alone and know exactly what the server can
 # and cannot do without reading a line of Python.
 
+# Global dry-run switch. When true, every write tool logs the call it
+# WOULD have made (with a "[DRY RUN]" marker) and returns a synthetic
+# response instead of touching the real downstream API.
+dry_run: true
+
 # Write tools are refused unless their name appears here. Empty by
 # default -- "read-only unless explicitly enabled" is the whole point.
 allowed_write_tools: []

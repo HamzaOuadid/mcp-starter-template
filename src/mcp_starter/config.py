@@ -27,6 +27,9 @@ class ToolConfig(BaseModel):
 
 
 class ServerConfig(BaseModel):
+    # Safe by default: write tools log-and-simulate instead of executing
+    # until an operator explicitly turns this off.
+    dry_run: bool = True
     allowed_write_tools: list[str] = Field(default_factory=list)
     tools: dict[str, ToolConfig] = Field(default_factory=dict)
 
@@ -44,6 +47,7 @@ class ServerConfig(BaseModel):
         spec calls for even before any config file is read.
         """
         return cls(
+            dry_run=True,
             allowed_write_tools=[],
             tools={
                 "search_docs": ToolConfig(read_only=True, cost_units=1, description="Search internal docs."),
