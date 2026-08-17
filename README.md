@@ -10,6 +10,11 @@ backed by an automated test, not just a docstring.
 Built as a portfolio piece after auditing and stripping dead tool handlers
 out of a production MCP fork that had none of these guardrails.
 
+A sibling project, **[`mcp-issue-tracker`](https://github.com/HamzaOuadid/mcp-issue-tracker)**,
+reuses this exact security architecture (auth passthrough, allowlist-gated
+writes, dry-run, rate limiting, audit trail) applied to a real, local
+issue-tracker domain — same pattern, proven twice rather than once.
+
 ## Why this exists
 
 Most public MCP server examples wire an assistant straight to a service
@@ -128,7 +133,7 @@ Requires Python 3.10+ (developed and tested on 3.10; the spec called for
 3.11+ — see *Deviations* below for why 3.10 was used instead).
 
 ```bash
-git clone <this-repo-url> mcp-starter-template
+git clone https://github.com/HamzaOuadid/mcp-starter-template.git
 cd mcp-starter-template
 pip install -e ".[dev]"
 ```
